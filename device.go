@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/zach-klippenstein/goadb/errors"
 	"github.com/zach-klippenstein/goadb/wire"
 )
 
@@ -167,6 +167,25 @@ func (c *Device) Stat(path string) (*DirEntry, error) {
 	return entry, wrapClientError(err, c, "Stat(%s)", path)
 }
 
+func (c *Device) Pull(remotePath string, dest io.Writer) (err error) {
+	var remoteReader io.ReadCloser
+	remoteReader, err = c.OpenRead(remotePath)
+	if err != nil {
+		fmt.Printf("Pull, Error OpenRead remote file %s err %s", remotePath, err.Error())
+		return
+	}
+	defer remoteReader.Close()
+
+	bytesWritten, err := io.Copy(dest, remoteReader)
+	if err != nil {
+		fmt.Println("Pull, Error copying data:", err)
+		return err
+	}
+
+	fmt.Printf("Pull, Copied %d bytes from %s to local\n", bytesWritten, remotePath)
+	return nil
+}
+
 func (c *Device) OpenRead(path string) (io.ReadCloser, error) {
 	conn, err := c.getSyncConn()
 	if err != nil {
@@ -175,6 +194,42 @@ func (c *Device) OpenRead(path string) (io.ReadCloser, error) {
 
 	reader, err := receiveFile(conn, path)
 	return reader, wrapClientError(err, c, "OpenRead(%s)", path)
+}
+
+func (c *Device) PushFile(sourceFile, remotePath string, modification ...time.Time) (err error) {
+	local, err := os.Open(sourceFile)
+	if err != nil {
+		fmt.Println("Error opening source file:", err)
+		return
+	}
+	defer local.Close()
+
+	if len(modification) == 0 {
+		var stat os.FileInfo
+		if stat, err = local.Stat(); err != nil {
+			return err
+		}
+		modification = []time.Time{stat.ModTime()}
+	}
+
+	var remoteWriter io.WriteCloser
+	remoteWriter, err = c.OpenWrite(remotePath, os.FileMode(0644), modification[0])
+	if err != nil {
+		fmt.Printf("Error OpenWrite remote file %s err %s", remotePath, err.Error())
+		return
+	}
+	defer remoteWriter.Close()
+
+	bytesWritten, err := io.Copy(remoteWriter, local)
+	if err != nil {
+		fmt.Println("Error copying data:", err)
+		return
+	}
+
+	fmt.Printf("PushFile, Copied %d bytes from %s to %s\n", bytesWritten, sourceFile, remotePath)
+
+	return nil
+	//return d.Push(local, remotePath, modification[0], DefaultFileMode, modification[0])
 }
 
 // OpenWrite opens the file at path on the device, creating it with the permissions specified

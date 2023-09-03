@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/zach-klippenstein/goadb/errors"
 	"github.com/zach-klippenstein/goadb/wire"
 )
 

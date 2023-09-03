@@ -2,11 +2,12 @@ package wire
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/zach-klippenstein/goadb/errors"
 )
 
 // TODO(zach): All EOF errors returned from networoking calls should use ConnectionResetError.
@@ -138,6 +139,7 @@ func readMessage(r io.Reader, lengthReader lengthReader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("readMessage, length: %d\n", length)
 
 	data := make([]byte, length)
 	n, err := io.ReadFull(r, data)
@@ -164,9 +166,10 @@ func readHexLength(r io.Reader) (int, error) {
 	}
 
 	// Clip the length to 255, as per the Google implementation.
-	if length > MaxMessageLength {
-		length = MaxMessageLength
-	}
+	fmt.Printf("readHexLength, length: %d\n", length)
+	// if length > MaxMessageLength {
+	// 	length = MaxMessageLength
+	// }
 
 	return int(length), nil
 }

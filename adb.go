@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/zach-klippenstein/goadb/errors"
+
 	"github.com/zach-klippenstein/goadb/wire"
 )
 
@@ -127,6 +128,7 @@ func (c *Adb) ListDevices() ([]*DeviceInfo, error) {
 		return nil, wrapClientError(err, c, "ListDevices")
 	}
 
+	fmt.Printf("ListDevices, resp: %s\n", resp)
 	devices, err := parseDeviceList(string(resp), parseDeviceLong)
 	if err != nil {
 		return nil, wrapClientError(err, c, "ListDevices")

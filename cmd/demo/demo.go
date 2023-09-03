@@ -9,7 +9,7 @@ import (
 	"time"
 
 	adb "github.com/zach-klippenstein/goadb"
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/zach-klippenstein/goadb/errors"
 )
 
 var (

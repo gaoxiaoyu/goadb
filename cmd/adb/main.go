@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
+	adb "goadb"
 	"io"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
 
+	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/cheggaaa/pb"
-	"github.com/zach-klippenstein/goadb"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const StdIoFilename = "-"

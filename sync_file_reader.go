@@ -3,7 +3,7 @@ package adb
 import (
 	"io"
 
-	"github.com/zach-klippenstein/goadb/internal/errors"
+	"github.com/zach-klippenstein/goadb/errors"
 	"github.com/zach-klippenstein/goadb/wire"
 )
 
