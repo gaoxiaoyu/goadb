@@ -1,1 +1,3 @@
 /.idea/
+cmd/adb/adb
+cmd/demo/demo
