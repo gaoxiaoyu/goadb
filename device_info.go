@@ -2,7 +2,6 @@ package adb
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
 
 	"github.com/zach-klippenstein/goadb/errors"
@@ -45,7 +44,7 @@ func parseDeviceList(list string, lineParseFunc func(string) (*DeviceInfo, error
 	scanner := bufio.NewScanner(strings.NewReader(list))
 
 	for scanner.Scan() {
-		fmt.Printf("parseDeviceList, line: %s\n", scanner.Text())
+		//fmt.Printf("parseDeviceList, line: %s\n", scanner.Text())
 		device, err := lineParseFunc(scanner.Text())
 		if err != nil {
 			return nil, err
@@ -67,7 +66,7 @@ func parseDeviceShort(line string) (*DeviceInfo, error) {
 }
 
 func parseDeviceLong(line string) (*DeviceInfo, error) {
-	fmt.Printf("parseDeviceLong, line: %s\n", line)
+	//fmt.Printf("parseDeviceLong, line: %s\n", line)
 	fields := strings.Fields(line)
 
 	attrs := parseDeviceAttributes(fields[2:])
@@ -77,7 +76,7 @@ func parseDeviceLong(line string) (*DeviceInfo, error) {
 func parseDeviceAttributes(fields []string) map[string]string {
 	attrs := map[string]string{}
 	for _, field := range fields {
-		fmt.Printf("parseDeviceAttributes, field: %s\n", field)
+		//fmt.Printf("parseDeviceAttributes, field: %s\n", field)
 		key, val := parseKeyVal(field)
 		attrs[key] = val
 	}

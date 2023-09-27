@@ -128,7 +128,7 @@ func (c *Adb) ListDevices() ([]*DeviceInfo, error) {
 		return nil, wrapClientError(err, c, "ListDevices")
 	}
 
-	fmt.Printf("ListDevices, resp: %s\n", resp)
+	//fmt.Printf("ListDevices, resp: %s\n", resp)
 	devices, err := parseDeviceList(string(resp), parseDeviceLong)
 	if err != nil {
 		return nil, wrapClientError(err, c, "ListDevices")

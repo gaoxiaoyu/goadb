@@ -2,7 +2,6 @@ package wire
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -139,7 +138,7 @@ func readMessage(r io.Reader, lengthReader lengthReader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("readMessage, length: %d\n", length)
+	//fmt.Printf("readMessage, length: %d\n", length)
 
 	data := make([]byte, length)
 	n, err := io.ReadFull(r, data)
@@ -166,7 +165,7 @@ func readHexLength(r io.Reader) (int, error) {
 	}
 
 	// Clip the length to 255, as per the Google implementation.
-	fmt.Printf("readHexLength, length: %d\n", length)
+	//fmt.Printf("readHexLength, length: %d\n", length)
 	// if length > MaxMessageLength {
 	// 	length = MaxMessageLength
 	// }
