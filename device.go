@@ -5,8 +5,10 @@ import (
 	"io"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/cheggaaa/pb"
 	"github.com/zach-klippenstein/goadb/errors"
 	"github.com/zach-klippenstein/goadb/wire"
 )
@@ -100,6 +102,7 @@ contain double quotes.
 */
 func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	cmd, err := prepareCommandLine(cmd, args...)
+	fmt.Printf("RunCommand, cmd: %s\n", cmd)
 	if err != nil {
 		return "", wrapClientError(err, c, "RunCommand")
 	}
@@ -204,11 +207,12 @@ func (c *Device) PushFile(sourceFile, remotePath string, modification ...time.Ti
 	}
 	defer local.Close()
 
+	var stat os.FileInfo
+	if stat, err = local.Stat(); err != nil {
+		return err
+	}
+
 	if len(modification) == 0 {
-		var stat os.FileInfo
-		if stat, err = local.Stat(); err != nil {
-			return err
-		}
 		modification = []time.Time{stat.ModTime()}
 	}
 
@@ -218,7 +222,26 @@ func (c *Device) PushFile(sourceFile, remotePath string, modification ...time.Ti
 		fmt.Printf("Error OpenWrite remote file %s err %s", remotePath, err.Error())
 		return
 	}
-	defer remoteWriter.Close()
+	defer func() {
+		remoteWriter.Close()
+
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-time.After(3 * time.Second):
+				goto EndTask
+			case <-ticker.C:
+				if entry, err := c.Stat(remotePath); err != nil {
+					fmt.Printf("Error check remote file %s err %s", remotePath, err.Error())
+					goto EndTask
+				} else if entry.Size == int32(stat.Size()) {
+					goto EndTask
+				}
+			}
+		}
+	EndTask:
+		ticker.Stop()
+	}()
 
 	bytesWritten, err := io.Copy(remoteWriter, local)
 	if err != nil {
@@ -230,6 +253,96 @@ func (c *Device) PushFile(sourceFile, remotePath string, modification ...time.Ti
 
 	return nil
 	//return d.Push(local, remotePath, modification[0], DefaultFileMode, modification[0])
+}
+
+func (c *Device) Push(localPath, remotePath string) (err error) {
+	if remotePath == "" {
+		fmt.Fprintln(os.Stderr, "error: must specify remote file")
+		return fmt.Errorf("remote path must specify")
+	}
+
+	if localPath == "" {
+		fmt.Fprintln(os.Stderr, "error: must specify local file")
+		return fmt.Errorf("local file must specify")
+	}
+
+	var (
+		localFile io.ReadCloser
+		size      int
+		perms     os.FileMode
+		mtime     time.Time
+	)
+
+	localFile, err = os.Open(localPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error opening local file %s: %s\n", localPath, err)
+		return err
+	}
+	info, err := os.Stat(localPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading local file %s: %s\n", localPath, err)
+		return err
+	}
+	size = int(info.Size())
+	perms = info.Mode().Perm()
+	mtime = info.ModTime()
+
+	defer localFile.Close()
+
+	writer, err := c.OpenWrite(remotePath, perms, mtime)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error opening remote file %s: %s\n", remotePath, err)
+		return err
+	}
+	defer writer.Close()
+
+	if err := copyWithProgressAndStats(writer, localFile, size, true); err != nil {
+		fmt.Fprintln(os.Stderr, "error pushing file:", err)
+		return err
+	}
+	return nil
+}
+
+// copyWithProgressAndStats copies src to dst.
+// If showProgress is true and size is positive, a progress bar is shown.
+// After copying, final stats about the transfer speed and size are shown.
+// Progress and stats are printed to stderr.
+func copyWithProgressAndStats(dst io.Writer, src io.Reader, size int, showProgress bool) error {
+	var progress *pb.ProgressBar
+	if showProgress && size > 0 {
+		progress = pb.New(size)
+		// Write to stderr in case dst is stdout.
+		progress.Output = os.Stderr
+		progress.ShowSpeed = true
+		progress.ShowPercent = true
+		progress.ShowTimeLeft = true
+		progress.SetUnits(pb.U_BYTES)
+		progress.Start()
+		dst = io.MultiWriter(dst, progress)
+	}
+
+	startTime := time.Now()
+	copied, err := io.Copy(dst, src)
+
+	if progress != nil {
+		progress.Finish()
+	}
+
+	if pathErr, ok := err.(*os.PathError); ok {
+		if errno, ok := pathErr.Err.(syscall.Errno); ok && errno == syscall.EPIPE {
+			// Pipe closed. Handle this like an EOF.
+			err = nil
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	duration := time.Since(startTime)
+	rate := int64(float64(copied) / duration.Seconds())
+	fmt.Fprintf(os.Stderr, "%d B/s (%d bytes in %s)\n", rate, copied, duration)
+
+	return nil
 }
 
 // OpenWrite opens the file at path on the device, creating it with the permissions specified
@@ -244,6 +357,19 @@ func (c *Device) OpenWrite(path string, perms os.FileMode, mtime time.Time) (io.
 
 	writer, err := sendFile(conn, path, perms, mtime)
 	return writer, wrapClientError(err, c, "OpenWrite(%s)", path)
+}
+
+func (c *Device) InstallApk(filepath string, args ...string) (string, error) {
+	commandArgs := []string{"-g"}
+	if len(args) > 0 {
+		commandArgs = append(commandArgs, args...)
+	}
+	commandArgs = append(commandArgs, filepath)
+	return c.RunCommand("pm install", commandArgs...)
+}
+
+func (c *Device) RemoveFile(filepath string) (string, error) {
+	return c.RunCommand("rm", filepath)
 }
 
 // getAttribute returns the first message returned by the server by running

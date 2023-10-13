@@ -58,6 +58,45 @@ func main() {
 	for _, serial := range serials {
 		fmt.Println("print device info, serial:", serial)
 		PrintDeviceInfoAndError(adb.DeviceWithSerial(serial))
+
+		device := client.Device(adb.DeviceWithSerial(serial))
+
+		fmt.Println("PushFile start", serial)
+
+		if err := device.PushFile("/home/ericgao/github-1-83-1.apk", "/data/local/tmp/github-1-83-1.apk"); err != nil {
+			fmt.Println("PushFile", err.Error())
+		}
+		if result, err := device.RunCommand("ls", "-al", "/data/local/tmp/github-1-83-1.apk"); err != nil {
+			fmt.Printf("RunCommand ls err, result %s, err %s\n", result, err.Error())
+		} else {
+			fmt.Printf("RunCommand ls sucess %s\n", result)
+		}
+
+		time.Sleep(time.Second * 10)
+		if result, err := device.RunCommand("ls", "-al", "/data/local/tmp/github-1-83-1.apk"); err != nil {
+			fmt.Printf("RunCommand ls err, result %s, err %s\n", result, err.Error())
+		} else {
+			fmt.Printf("RunCommand ls sucess %s\n", result)
+		}
+
+		if result, err := device.RunCommand("pm", "install", "-r", "-d", "-g", "/data/local/tmp/github-1-83-1.apk"); err != nil {
+			fmt.Printf("RunCommand err, result %s, err %s\n", result, err.Error())
+		} else {
+			fmt.Printf("RunCommand sucess %s\n", result)
+		}
+
+		// if result, err := device.InstallApk("/data/local/tmp/github-1-83-1.apk"); err != nil {
+		// 	fmt.Println("InstallApk err", result, err.Error())
+		// } else {
+		// 	fmt.Println("InstallApk sucess", result)
+		// }
+
+		// if result, err := device.RemoveFile("/data/local/tmp/github-1-83-1.apk"); err != nil {
+		// 	fmt.Println("RemoveFile err", result, err.Error())
+		// } else {
+		// 	fmt.Println("RemoveFile sucess", result)
+		// }
+
 	}
 
 	fmt.Println()
