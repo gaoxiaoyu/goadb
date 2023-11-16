@@ -1,10 +1,12 @@
 package wire
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/zach-klippenstein/goadb/errors"
 )
@@ -78,7 +80,38 @@ func writeFully(w io.Writer, data []byte) error {
 			return errors.WrapErrorf(err, errors.NetworkError, "error writing %d bytes at offset %d", len(data), offset)
 		}
 		offset += n
+		fmt.Println("writeFully, write:", offset)
 	}
+	return nil
+}
+
+func writeFullyWithTimeout(ctx context.Context, w io.Writer, data []byte, timeout time.Duration) error {
+	offset := 0
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	for offset < len(data) {
+		select {
+		case <-ctx.Done():
+			return errors.WrapErrorf(ctx.Err(), errors.Timeout, "writeFullyWithTimeout: operation timed out")
+		case <-timer.C:
+			return errors.WrapErrorf(ctx.Err(), errors.Timeout, "writeFullyWithTimeout: operation timed out")
+		default:
+			n, err := w.Write(data[offset:])
+			if err != nil {
+				return errors.WrapErrorf(err, errors.NetworkError, "error writing %d bytes at offset %d", len(data), offset)
+			}
+			offset += n
+			fmt.Println("writeFully, write:", offset)
+
+			// 重置计时器
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(timeout)
+		}
+	}
+
 	return nil
 }
 

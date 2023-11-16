@@ -1,8 +1,10 @@
 package wire
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/zach-klippenstein/goadb/errors"
 )
@@ -34,7 +36,10 @@ func (s *realSender) SendMessage(msg []byte) error {
 	}
 
 	lengthAndMsg := fmt.Sprintf("%04x%s", len(msg), msg)
-	return writeFully(s.writer, []byte(lengthAndMsg))
+	//return writeFully(s.writer, []byte(lengthAndMsg))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return writeFullyWithTimeout(ctx, s.writer, []byte(lengthAndMsg), 5*time.Second)
 }
 
 func (s *realSender) NewSyncSender() SyncSender {

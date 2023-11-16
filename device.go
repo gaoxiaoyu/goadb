@@ -1,6 +1,7 @@
 package adb
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -121,11 +122,22 @@ func (c *Device) RunCommand(cmd string, args ...string) (string, error) {
 	if err = conn.SendMessage([]byte(req)); err != nil {
 		return "", wrapClientError(err, c, "RunCommand")
 	}
-	if _, err = conn.ReadStatus(req); err != nil {
+	fmt.Println("RunCommand, SendMessage done, req:", req)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err = conn.ReadStatusWithTimeout(ctx, req); err != nil {
 		return "", wrapClientError(err, c, "RunCommand")
 	}
+	fmt.Println("RunCommand, ReadStatus done, req:", req)
 
-	resp, err := conn.ReadUntilEof()
+	//resp, err := conn.ReadUntilEof()
+
+	resp, err := conn.ReadUntilEofWithTimeout(ctx)
+	//fmt.Println("RunCommand, ReadUntilEof done, resp:", resp)
+	if err != nil {
+		fmt.Println("RunCommand, ReadUntilEof done, err:", ErrorWithCauseChain(err))
+	}
+
 	return string(resp), wrapClientError(err, c, "RunCommand")
 }
 
@@ -407,17 +419,22 @@ func (c *Device) dialDevice() (*wire.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("dialDevice, Dial done")
 
 	req := fmt.Sprintf("host:%s", c.descriptor.getTransportDescriptor())
+	fmt.Println("dialDevice, req:", req)
 	if err = wire.SendMessageString(conn, req); err != nil {
 		conn.Close()
 		return nil, errors.WrapErrf(err, "error connecting to device '%s'", c.descriptor)
 	}
+	fmt.Println("dialDevice, SendMessageString done")
 
 	if _, err = conn.ReadStatus(req); err != nil {
 		conn.Close()
 		return nil, err
 	}
+
+	fmt.Println("dialDevice, ReadStatus done")
 
 	return conn, nil
 }
