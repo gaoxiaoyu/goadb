@@ -346,7 +346,7 @@ func readHexLengthWithTimeout(ctx context.Context, r io.Reader) (int, error) {
 				return 0, errIncompleteMessage("length", n, 4)
 			}
 			n += nn
-			lengthHex = append(lengthHex, buf[:n]...)
+			lengthHex = append(lengthHex, buf[:nn]...)
 		}
 	}
 
