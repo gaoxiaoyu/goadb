@@ -83,7 +83,7 @@ func TestCalculateStateDiffsOneRemoved(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"serial", StateOffline, StateDisconnected},
+		{"serial", StateOffline, StateDisconnected},
 	}, diffs)
 }
 
@@ -99,7 +99,7 @@ func TestCalculateStateDiffsOneAddedOneUnchanged(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"2", StateDisconnected, StateOffline},
+		{"2", StateDisconnected, StateOffline},
 	}, diffs)
 }
 
@@ -115,7 +115,7 @@ func TestCalculateStateDiffsOneRemovedOneUnchanged(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"1", StateOffline, StateDisconnected},
+		{"1", StateOffline, StateDisconnected},
 	}, diffs)
 }
 
@@ -130,8 +130,8 @@ func TestCalculateStateDiffsOneAddedOneRemoved(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"1", StateOffline, StateDisconnected},
-		DeviceStateChangedEvent{"2", StateDisconnected, StateOffline},
+		{"1", StateOffline, StateDisconnected},
+		{"2", StateDisconnected, StateOffline},
 	}, diffs)
 }
 
@@ -148,7 +148,7 @@ func TestCalculateStateDiffsOneChangedOneUnchanged(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"1", StateOffline, StateOnline},
+		{"1", StateOffline, StateOnline},
 	}, diffs)
 }
 
@@ -165,8 +165,8 @@ func TestCalculateStateDiffsMultipleChanged(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"1", StateOffline, StateOnline},
-		DeviceStateChangedEvent{"2", StateOnline, StateOffline},
+		{"1", StateOffline, StateOnline},
+		{"2", StateOnline, StateOffline},
 	}, diffs)
 }
 
@@ -183,9 +183,9 @@ func TestCalculateStateDiffsOneAddedOneRemovedOneChanged(t *testing.T) {
 	diffs := calculateStateDiffs(oldStates, newStates)
 
 	assertContainsOnly(t, []DeviceStateChangedEvent{
-		DeviceStateChangedEvent{"1", StateOffline, StateOnline},
-		DeviceStateChangedEvent{"2", StateOffline, StateDisconnected},
-		DeviceStateChangedEvent{"3", StateDisconnected, StateOffline},
+		{"1", StateOffline, StateOnline},
+		{"2", StateOffline, StateDisconnected},
+		{"3", StateDisconnected, StateOffline},
 	}, diffs)
 }
 
